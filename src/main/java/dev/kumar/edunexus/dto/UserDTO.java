@@ -2,6 +2,8 @@ package dev.kumar.edunexus.dto;
 
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Getter
 @Setter
 @Builder
@@ -11,6 +13,11 @@ import lombok.*;
 public class UserDTO {
     private String id;
     private String name;
+    private String username;
     private String email;
-    private String photo_url;
+    private LocalDate joinDate;
+    private int dayStreak;
+    private int totalXP;
+    private int hearts;
+    private String profileUrl;
 }

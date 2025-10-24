@@ -6,13 +6,11 @@ import com.google.firebase.auth.FirebaseToken;
 import com.google.firebase.auth.UserRecord;
 import dev.kumar.edunexus.exception.FirebaseOperationException;
 import dev.kumar.edunexus.exception.ResourceNotFoundException;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
 @Component
-@Log4j2
 public class FirebaseUtil {
     
     public Optional<UserRecord> fetchUserFromToken(String token) {
@@ -20,7 +18,7 @@ public class FirebaseUtil {
         try {
             return Optional.of(FirebaseAuth.getInstance().getUser(uid));
         } catch (FirebaseAuthException e) {
-            log.error("Error fetching Firebase user: {}", e.getMessage());
+            System.out.println("Error fetching Firebase user: " + e.getMessage());
             return Optional.empty();
         }
     }
@@ -30,7 +28,7 @@ public class FirebaseUtil {
             FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
             return decodedToken.getUid();
         } catch (FirebaseAuthException e) {
-            log.error("Error decoding token: {}", e.getMessage());
+            System.out.println("Error decoding token: " + e.getMessage());
             throw new ResourceNotFoundException("Invalid token");
         }
     }

@@ -9,11 +9,9 @@ import dev.kumar.edunexus.mapper.UserMapper;
 import dev.kumar.edunexus.repository.UserRepository;
 import dev.kumar.edunexus.util.FirebaseUtil;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 
 @Service
-@Log4j2
 @RequiredArgsConstructor
 public class UserService {
     
@@ -25,7 +23,6 @@ public class UserService {
     public UserDTO loginUser(AccessTokenBody tokenBody) {
         String authHeader = tokenBody.getToken();
         if (authHeader == null || authHeader.isBlank() || !authHeader.startsWith("Bearer")) {
-            log.debug("Token Body: {}", tokenBody);
             throw new ResourceNotFoundException("Token not found or invalid format");
         }
         
@@ -41,7 +38,6 @@ public class UserService {
     // Fetch user by token
     public UserDTO fetchUser(String token) {
         if (token == null || token.isBlank() || !token.startsWith("Bearer")) {
-            log.debug("Invalid token: {}", token);
             throw new ResourceNotFoundException("Token not found or invalid format");
         }
         
@@ -60,15 +56,11 @@ public class UserService {
         String actualToken = token.substring(7);
         String uid = firebaseUtil.extractUidFromToken(actualToken);
         
-        if (!uid.equals(userDTO.getId())) {
-            throw new ResourceNotFoundException("You can only update your own profile");
-        }
-        
         User existingUser = repo.findById(uid)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + uid));
         
         existingUser.setName(userDTO.getName());
-        existingUser.setPhoto_url(userDTO.getPhoto_url());
+        existingUser.setProfileUrl(userDTO.getProfileUrl());
         
         User updatedUser = repo.save(existingUser);
         return userMapper.toDTO(updatedUser);
@@ -106,7 +98,7 @@ public class UserService {
                 .id(firebaseUser.getUid())
                 .name(firebaseUser.getDisplayName())
                 .email(firebaseUser.getEmail())
-                .photo_url(firebaseUser.getPhotoUrl())
+                .profileUrl(firebaseUser.getPhotoUrl())
                 .build();
         
         repo.save(user);

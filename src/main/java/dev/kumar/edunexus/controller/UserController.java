@@ -24,7 +24,7 @@ public class UserController {
         );
     }
     
-    @GetMapping("/fetch")
+    @GetMapping("")
     public CustomResponse<UserDTO> fetchUserHandler(
             @RequestHeader("Authorization") String token
     ) {
@@ -35,7 +35,7 @@ public class UserController {
         );
     }
     
-    @PutMapping("/update")
+    @PutMapping("")
     public CustomResponse<UserDTO> updateUserHandler(
             @RequestHeader("Authorization") String token,
             @RequestBody UserDTO userDTO
@@ -47,7 +47,7 @@ public class UserController {
         );
     }
     
-    @DeleteMapping("/delete")
+    @DeleteMapping("")
     public CustomResponse<Void> deleteUserHandler(
             @RequestHeader("Authorization") String token
     ) {

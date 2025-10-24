@@ -8,6 +8,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -47,6 +48,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new CustomResponse<>(HttpStatus.BAD_REQUEST, "Validation Failed", errors));
+    }
+    
+    //MethodArgumentTypeMismatchException -- UUID
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<CustomResponse<String>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException ex) {
+        return new ResponseEntity<>(
+                new CustomResponse<>(HttpStatus.BAD_REQUEST, "Invalid UUID format", "ERROR"),
+                HttpStatus.BAD_REQUEST
+        );
     }
     
     //Conflict Exception
