@@ -1,15 +1,20 @@
 package dev.kumar.edunexus.service;
 
 import com.google.firebase.auth.UserRecord;
-import dev.kumar.edunexus.dto.AccessTokenBody;
-import dev.kumar.edunexus.dto.UserDTO;
-import dev.kumar.edunexus.entity.User;
+import dev.kumar.edunexus.dto.*;
+import dev.kumar.edunexus.dto.progress.CourseProgressDTO;
+import dev.kumar.edunexus.entity.*;
 import dev.kumar.edunexus.exception.ResourceNotFoundException;
 import dev.kumar.edunexus.mapper.UserMapper;
-import dev.kumar.edunexus.repository.UserRepository;
+import dev.kumar.edunexus.repository.*;
 import dev.kumar.edunexus.util.FirebaseUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +23,11 @@ public class UserService {
     private final UserRepository repo;
     private final UserMapper userMapper;
     private final FirebaseUtil firebaseUtil;
+    private final UserCourseRepository userCourseRepo;
+    private final SectionRepository sectionRepo;
+    private final UnitRepository unitRepo;
+    private final LevelRepository levelRepo;
+    private final UserLevelProgressRepository progressRepo;
     
     // Login user with Firebase token
     public UserDTO loginUser(AccessTokenBody tokenBody) {
@@ -45,7 +55,13 @@ public class UserService {
         String uid = firebaseUtil.extractUidFromToken(actualToken);
         
         User user = repo.findById(uid).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return userMapper.toDTO(user);
+        UserDTO userDTO = userMapper.toDTO(user);
+        
+        // Fetch enrolled courses with progress
+        List<EnrolledCourseDTO> enrolledCourses = getEnrolledCoursesWithProgress(uid);
+        userDTO.setEnrolledCourses(enrolledCourses);
+        
+        return userDTO;
     }
     
     // Update user profile
@@ -103,5 +119,68 @@ public class UserService {
         
         repo.save(user);
         return userMapper.toDTO(user);
+    }
+    
+    private List<EnrolledCourseDTO> getEnrolledCoursesWithProgress(String userId) {
+        List<UserCourse> userCourses = userCourseRepo.findByUserId(userId);
+        
+        return userCourses.stream()
+                .map(userCourse -> {
+                    Course course = userCourse.getCourse();
+                    CourseProgressDTO progress = getCourseProgress(course.getId(), userId);
+                    
+                    return EnrolledCourseDTO.builder()
+                            .id(course.getId())
+                            .courseName(course.getCourseName())
+                            .emoji(course.getEmoji())
+                            .courseXP(userCourse.getCourseXP())
+                            .progress(progress)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+    
+    private CourseProgressDTO getCourseProgress(UUID courseId, String userId) {
+        List<Section> sections = sectionRepo.findByCourseId(courseId);
+        Map<UUID, Boolean> levelCompletionMap = getLevelCompletionMap(userId, courseId);
+        
+        return CourseProgressDTO.builder()
+                .id(courseId)
+                .sections(sections.stream()
+                        .map(section -> {
+                            List<Unit> units = unitRepo.findBySectionId(section.getId());
+                            return dev.kumar.edunexus.dto.progress.SectionProgressDTO.builder()
+                                    .id(section.getId())
+                                    .sectionName(section.getSectionName())
+                                    .units(units.stream()
+                                            .map(unit -> {
+                                                List<Level> levels = levelRepo.findByUnitId(unit.getId());
+                                                return dev.kumar.edunexus.dto.progress.UnitProgressDTO.builder()
+                                                        .id(unit.getId())
+                                                        .number(unit.getNumber())
+                                                        .guidance(unit.getGuidance())
+                                                        .levels(levels.stream()
+                                                                .map(level -> dev.kumar.edunexus.dto.progress.LevelProgressDTO.builder()
+                                                                        .id(level.getId())
+                                                                        .levelNumber(level.getLevelNumber())
+                                                                        .completed(levelCompletionMap.getOrDefault(level.getId(), false))
+                                                                        .build())
+                                                                .collect(Collectors.toList()))
+                                                        .build();
+                                            })
+                                            .collect(Collectors.toList()))
+                                    .build();
+                        })
+                        .collect(Collectors.toList()))
+                .build();
+    }
+    
+    private Map<UUID, Boolean> getLevelCompletionMap(String userId, UUID courseId) {
+        List<UserLevelProgress> progressList = progressRepo.findByUserIdAndCourseId(userId, courseId);
+        return progressList.stream()
+                .collect(Collectors.toMap(
+                        progress -> progress.getLevel().getId(),
+                        UserLevelProgress::isCompleted
+                ));
     }
 }

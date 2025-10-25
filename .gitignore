@@ -38,3 +38,4 @@ out/
 
 src/main/resources/application.properties
 src/main/resources/edunexus-b1a32-firebase-adminsdk-fbsvc-cb3432bad9.json
+/Dockerfile

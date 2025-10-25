@@ -3,6 +3,7 @@ package dev.kumar.edunexus.service;
 import dev.kumar.edunexus.dto.UnitDTO;
 import dev.kumar.edunexus.entity.Unit;
 import dev.kumar.edunexus.exception.ResourceNotFoundException;
+import dev.kumar.edunexus.repository.SectionRepository;
 import dev.kumar.edunexus.repository.UnitRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,8 +17,12 @@ import java.util.stream.Collectors;
 public class UnitService {
     
     private final UnitRepository unitRepo;
+    private final SectionRepository sectionRepo;
     
     public List<UnitDTO> getUnitsBySection(UUID sectionId) {
+        if(!sectionRepo.existsById(sectionId)){
+            throw new ResourceNotFoundException("Section not found with id: " + sectionId);
+        }
         try {
             return unitRepo.findBySectionId(sectionId).stream()
                     .map(this::toDTO)

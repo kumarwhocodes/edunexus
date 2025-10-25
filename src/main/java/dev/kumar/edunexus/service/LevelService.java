@@ -77,6 +77,9 @@ public class LevelService {
     }
     
     public List<LevelDTO> getLevelsByUnit(UUID unitId) {
+        if(!unitRepo.existsById(unitId)){
+            throw new ResourceNotFoundException("Unit not found with id: " + unitId);
+        }
         try {
             return levelRepo.findByUnitId(unitId).stream()
                     .map(this::toDTO)

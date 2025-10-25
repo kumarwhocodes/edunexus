@@ -3,6 +3,7 @@ package dev.kumar.edunexus.dto;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -20,4 +21,5 @@ public class UserDTO {
     private int totalXP;
     private int hearts;
     private String profileUrl;
+    private List<EnrolledCourseDTO> enrolledCourses;
 }
