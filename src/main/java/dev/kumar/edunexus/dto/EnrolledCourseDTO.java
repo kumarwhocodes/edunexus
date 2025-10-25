@@ -1,8 +1,9 @@
 package dev.kumar.edunexus.dto;
 
-import dev.kumar.edunexus.dto.progress.CourseProgressDTO;
+import dev.kumar.edunexus.dto.progress.SectionProgressDTO;
 import lombok.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -16,5 +17,5 @@ public class EnrolledCourseDTO {
     private String courseName;
     private String emoji;
     private int courseXP;
-    private CourseProgressDTO progress;
+    private List<SectionProgressDTO> progress;
 }

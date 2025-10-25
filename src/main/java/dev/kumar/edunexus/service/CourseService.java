@@ -29,7 +29,6 @@ public class CourseService {
     private final UserRepository userRepo;
     private final CourseMapper courseMapper;
     private final FirebaseUtil firebaseUtil;
-    private final EntityManager entityManager;
     
     public List<CourseDTO> getAllCourses() {
         try {

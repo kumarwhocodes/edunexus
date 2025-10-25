@@ -2,7 +2,7 @@ package dev.kumar.edunexus.service;
 
 import com.google.firebase.auth.UserRecord;
 import dev.kumar.edunexus.dto.*;
-import dev.kumar.edunexus.dto.progress.CourseProgressDTO;
+import dev.kumar.edunexus.dto.progress.SectionProgressDTO;
 import dev.kumar.edunexus.entity.*;
 import dev.kumar.edunexus.exception.ResourceNotFoundException;
 import dev.kumar.edunexus.mapper.UserMapper;
@@ -11,6 +11,7 @@ import dev.kumar.edunexus.util.FirebaseUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -113,6 +114,7 @@ public class UserService {
                 .builder()
                 .id(firebaseUser.getUid())
                 .name(firebaseUser.getDisplayName())
+                .joinDate(LocalDate.now())
                 .email(firebaseUser.getEmail())
                 .profileUrl(firebaseUser.getPhotoUrl())
                 .build();
@@ -127,7 +129,7 @@ public class UserService {
         return userCourses.stream()
                 .map(userCourse -> {
                     Course course = userCourse.getCourse();
-                    CourseProgressDTO progress = getCourseProgress(course.getId(), userId);
+                    List<SectionProgressDTO> progress = getCourseProgress(course.getId(), userId);
                     
                     return EnrolledCourseDTO.builder()
                             .id(course.getId())
@@ -140,39 +142,36 @@ public class UserService {
                 .collect(Collectors.toList());
     }
     
-    private CourseProgressDTO getCourseProgress(UUID courseId, String userId) {
+    private List<SectionProgressDTO> getCourseProgress(UUID courseId, String userId) {
         List<Section> sections = sectionRepo.findByCourseId(courseId);
         Map<UUID, Boolean> levelCompletionMap = getLevelCompletionMap(userId, courseId);
         
-        return CourseProgressDTO.builder()
-                .id(courseId)
-                .sections(sections.stream()
-                        .map(section -> {
-                            List<Unit> units = unitRepo.findBySectionId(section.getId());
-                            return dev.kumar.edunexus.dto.progress.SectionProgressDTO.builder()
-                                    .id(section.getId())
-                                    .sectionName(section.getSectionName())
-                                    .units(units.stream()
-                                            .map(unit -> {
-                                                List<Level> levels = levelRepo.findByUnitId(unit.getId());
-                                                return dev.kumar.edunexus.dto.progress.UnitProgressDTO.builder()
-                                                        .id(unit.getId())
-                                                        .number(unit.getNumber())
-                                                        .guidance(unit.getGuidance())
-                                                        .levels(levels.stream()
-                                                                .map(level -> dev.kumar.edunexus.dto.progress.LevelProgressDTO.builder()
-                                                                        .id(level.getId())
-                                                                        .levelNumber(level.getLevelNumber())
-                                                                        .completed(levelCompletionMap.getOrDefault(level.getId(), false))
-                                                                        .build())
-                                                                .collect(Collectors.toList()))
-                                                        .build();
-                                            })
-                                            .collect(Collectors.toList()))
-                                    .build();
-                        })
-                        .collect(Collectors.toList()))
-                .build();
+        return sections.stream()
+                .map(section -> {
+                    List<Unit> units = unitRepo.findBySectionId(section.getId());
+                    return SectionProgressDTO.builder()
+                            .id(section.getId())
+                            .sectionName(section.getSectionName())
+                            .units(units.stream()
+                                    .map(unit -> {
+                                        List<Level> levels = levelRepo.findByUnitId(unit.getId());
+                                        return dev.kumar.edunexus.dto.progress.UnitProgressDTO.builder()
+                                                .id(unit.getId())
+                                                .number(unit.getNumber())
+                                                .guidance(unit.getGuidance())
+                                                .levels(levels.stream()
+                                                        .map(level -> dev.kumar.edunexus.dto.progress.LevelProgressDTO.builder()
+                                                                .id(level.getId())
+                                                                .levelNumber(level.getLevelNumber())
+                                                                .completed(levelCompletionMap.getOrDefault(level.getId(), false))
+                                                                .build())
+                                                        .collect(Collectors.toList()))
+                                                .build();
+                                    })
+                                    .collect(Collectors.toList()))
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
     
     private Map<UUID, Boolean> getLevelCompletionMap(String userId, UUID courseId) {
