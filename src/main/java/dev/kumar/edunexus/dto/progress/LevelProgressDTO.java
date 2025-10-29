@@ -13,5 +13,6 @@ import java.util.UUID;
 public class LevelProgressDTO {
     private UUID id;
     private int levelNumber;
+    private String levelName;
     private boolean completed; // for tick/cross display
 }

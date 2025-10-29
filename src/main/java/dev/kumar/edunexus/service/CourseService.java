@@ -64,13 +64,14 @@ public class CourseService {
                                         .map(level -> LevelProgressDTO.builder()
                                                 .id(level.getId())
                                                 .levelNumber(level.getLevelNumber())
+                                                .levelName(level.getLevelName())
                                                 .completed(levelCompletionMap.getOrDefault(level.getId(), false))
                                                 .build())
                                         .collect(Collectors.toList());
                                 
                                 return UnitProgressDTO.builder()
                                         .id(unit.getId())
-                                        .number(unit.getNumber())
+                                        .unitName(unit.getUnitName())
                                         .guidance(unit.getGuidance())
                                         .levels(levelProgress)
                                         .build();
@@ -137,9 +138,11 @@ public class CourseService {
         try {
             List<UserLevelProgress> progressList = progressRepo.findByUserIdAndCourseId(userId, courseId);
             return progressList.stream()
+                    .filter(UserLevelProgress::isCompleted)
                     .collect(Collectors.toMap(
                             progress -> progress.getLevel().getId(),
-                            UserLevelProgress::isCompleted
+                            UserLevelProgress::isCompleted,
+                            (existing, replacement) -> existing
                     ));
         } catch (Exception e) {
             System.out.println("Error fetching level completion map for user " + userId + " and course " + courseId + ": " + e.getMessage());

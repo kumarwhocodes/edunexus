@@ -12,7 +12,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UnitDTO {
     private UUID id;
-    private int number;
+    private String unitName;
     private String guidance;
     private UUID sectionId;
 }

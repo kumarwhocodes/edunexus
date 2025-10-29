@@ -20,6 +20,7 @@ public class Level {
     private UUID id;
 
     private int levelNumber;
+    private String levelName;
 
     @ManyToOne
     @JoinColumn(name = "unit_id")

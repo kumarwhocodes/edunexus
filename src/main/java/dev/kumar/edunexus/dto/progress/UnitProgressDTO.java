@@ -13,7 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class UnitProgressDTO {
     private UUID id;
-    private int number;
+    private String unitName;
     private String guidance;
     private List<LevelProgressDTO> levels;
 }

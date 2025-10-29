@@ -13,6 +13,7 @@ import java.util.UUID;
 public class LevelDTO {
     private UUID id;
     private int levelNumber;
+    private String levelName;
     private UUID unitId;
     private boolean completed; // for progress tracking
 }

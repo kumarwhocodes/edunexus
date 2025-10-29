@@ -2,7 +2,6 @@ package dev.kumar.edunexus.service;
 
 import com.google.firebase.auth.UserRecord;
 import dev.kumar.edunexus.dto.*;
-import dev.kumar.edunexus.dto.progress.SectionProgressDTO;
 import dev.kumar.edunexus.entity.*;
 import dev.kumar.edunexus.exception.ResourceNotFoundException;
 import dev.kumar.edunexus.mapper.UserMapper;
@@ -129,57 +128,39 @@ public class UserService {
         return userCourses.stream()
                 .map(userCourse -> {
                     Course course = userCourse.getCourse();
-                    List<SectionProgressDTO> progress = getCourseProgress(course.getId(), userId);
+                    int completedLevels = getCompletedLevelsCount(course.getId(), userId);
+                    int totalLevels = getTotalLevelsCount(course.getId());
                     
                     return EnrolledCourseDTO.builder()
                             .id(course.getId())
                             .courseName(course.getCourseName())
                             .emoji(course.getEmoji())
                             .courseXP(userCourse.getCourseXP())
-                            .progress(progress)
+                            .completedLevels(completedLevels)
+                            .totalLevels(totalLevels)
                             .build();
                 })
                 .collect(Collectors.toList());
     }
     
-    private List<SectionProgressDTO> getCourseProgress(UUID courseId, String userId) {
-        List<Section> sections = sectionRepo.findByCourseId(courseId);
-        Map<UUID, Boolean> levelCompletionMap = getLevelCompletionMap(userId, courseId);
-        
-        return sections.stream()
-                .map(section -> {
-                    List<Unit> units = unitRepo.findBySectionId(section.getId());
-                    return SectionProgressDTO.builder()
-                            .id(section.getId())
-                            .sectionName(section.getSectionName())
-                            .units(units.stream()
-                                    .map(unit -> {
-                                        List<Level> levels = levelRepo.findByUnitId(unit.getId());
-                                        return dev.kumar.edunexus.dto.progress.UnitProgressDTO.builder()
-                                                .id(unit.getId())
-                                                .number(unit.getNumber())
-                                                .guidance(unit.getGuidance())
-                                                .levels(levels.stream()
-                                                        .map(level -> dev.kumar.edunexus.dto.progress.LevelProgressDTO.builder()
-                                                                .id(level.getId())
-                                                                .levelNumber(level.getLevelNumber())
-                                                                .completed(levelCompletionMap.getOrDefault(level.getId(), false))
-                                                                .build())
-                                                        .collect(Collectors.toList()))
-                                                .build();
-                                    })
-                                    .collect(Collectors.toList()))
-                            .build();
-                })
-                .collect(Collectors.toList());
-    }
-    
-    private Map<UUID, Boolean> getLevelCompletionMap(String userId, UUID courseId) {
+    private int getCompletedLevelsCount(UUID courseId, String userId) {
         List<UserLevelProgress> progressList = progressRepo.findByUserIdAndCourseId(userId, courseId);
-        return progressList.stream()
-                .collect(Collectors.toMap(
-                        progress -> progress.getLevel().getId(),
-                        UserLevelProgress::isCompleted
-                ));
+        return (int) progressList.stream()
+                .filter(UserLevelProgress::isCompleted)
+                .map(progress -> progress.getLevel().getId())
+                .distinct()
+                .count();
+    }
+    
+    private int getTotalLevelsCount(UUID courseId) {
+        List<Section> sections = sectionRepo.findByCourseId(courseId);
+        return sections.stream()
+                .mapToInt(section -> {
+                    List<Unit> units = unitRepo.findBySectionId(section.getId());
+                    return units.stream()
+                            .mapToInt(unit -> levelRepo.findByUnitId(unit.getId()).size())
+                            .sum();
+                })
+                .sum();
     }
 }

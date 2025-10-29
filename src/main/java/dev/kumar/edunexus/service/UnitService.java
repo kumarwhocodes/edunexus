@@ -34,6 +34,9 @@ public class UnitService {
     }
     
     public UnitDTO createUnit(UnitDTO unitDTO) {
+        if(!sectionRepo.existsById(unitDTO.getSectionId())){
+            throw new ResourceNotFoundException("Section not found with id: " + unitDTO.getSectionId());
+        }
         try {
             Unit unit = toEntity(unitDTO);
             Unit savedUnit = unitRepo.save(unit);
@@ -50,7 +53,7 @@ public class UnitService {
                 .orElseThrow(() -> new ResourceNotFoundException("Unit not found with id: " + unitId));
         
         try {
-            existingUnit.setNumber(unitDTO.getNumber());
+            existingUnit.setUnitName(unitDTO.getUnitName());
             existingUnit.setGuidance(unitDTO.getGuidance());
             Unit updatedUnit = unitRepo.save(existingUnit);
             System.out.println("Unit updated with id: " + unitId);
@@ -77,7 +80,7 @@ public class UnitService {
     private UnitDTO toDTO(Unit unit) {
         return UnitDTO.builder()
                 .id(unit.getId())
-                .number(unit.getNumber())
+                .unitName(unit.getUnitName())
                 .guidance(unit.getGuidance())
                 .sectionId(unit.getSection().getId())
                 .build();
@@ -85,7 +88,7 @@ public class UnitService {
     
     private Unit toEntity(UnitDTO dto) {
         return Unit.builder()
-                .number(dto.getNumber())
+                .unitName(dto.getUnitName())
                 .guidance(dto.getGuidance())
                 .section(dev.kumar.edunexus.entity.Section.builder().id(dto.getSectionId()).build())
                 .build();

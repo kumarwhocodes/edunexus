@@ -19,7 +19,7 @@ public class Unit {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private int number;
+    private String unitName;
     private String guidance;
 
     @ManyToOne

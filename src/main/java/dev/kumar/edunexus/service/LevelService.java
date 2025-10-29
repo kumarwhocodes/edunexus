@@ -7,11 +7,13 @@ import dev.kumar.edunexus.entity.User;
 import dev.kumar.edunexus.entity.UserLevelProgress;
 import dev.kumar.edunexus.exception.ResourceNotFoundException;
 import dev.kumar.edunexus.repository.*;
+import dev.kumar.edunexus.entity.UserCourse;
 import dev.kumar.edunexus.util.FirebaseUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +28,7 @@ public class LevelService {
     private final UserRepository userRepo;
     private final FirebaseUtil firebaseUtil;
     private final UnitRepository unitRepo;
+    private final UserCourseRepository userCourseRepo;
     
     @Transactional
     public void completeLevel(UUID levelId, String token, int xpEarned) {
@@ -34,12 +37,13 @@ public class LevelService {
         Level level = levelRepo.findById(levelId)
                 .orElseThrow(() -> new ResourceNotFoundException("Level not found with id: " + levelId));
         
+        UUID courseId = level.getUnit().getSection().getCourse().getId();
+        if(!userCourseRepo.existsByUserIdAndCourseId(userId, courseId)){
+            throw new ResourceNotFoundException("User not enrolled in course");
+        }
+        
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-        
-        if (progressRepo.existsByUserIdAndLevelId(userId, levelId)) {
-            throw new RuntimeException("Level " + level.getLevelNumber() + " already completed");
-        }
         
         try {
             UserLevelProgress progress = UserLevelProgress.builder()
@@ -55,7 +59,17 @@ public class LevelService {
             progressRepo.save(progress);
             
             user.setTotalXP(user.getTotalXP() + xpEarned);
+            updateStreak(user);
             userRepo.save(user);
+            
+            // Update course XP
+            userCourseRepo.findByUserId(userId).stream()
+                    .filter(uc -> uc.getCourse().getId().equals(courseId))
+                    .findFirst()
+                    .ifPresent(userCourse -> {
+                        userCourse.setCourseXP(userCourse.getCourseXP() + xpEarned);
+                        userCourseRepo.save(userCourse);
+                    });
             
             System.out.println("User " + userId + " completed level " + levelId + " and earned " + xpEarned + " XP");
         } catch (Exception e) {
@@ -112,6 +126,7 @@ public class LevelService {
         
         try {
             existingLevel.setLevelNumber(levelDTO.getLevelNumber());
+            existingLevel.setLevelName(levelDTO.getLevelName());
             Level updatedLevel = levelRepo.save(existingLevel);
             System.out.println("Level updated with id: " + levelId);
             return toDTO(updatedLevel);
@@ -138,6 +153,7 @@ public class LevelService {
         return LevelDTO.builder()
                 .id(level.getId())
                 .levelNumber(level.getLevelNumber())
+                .levelName(level.getLevelName())
                 .unitId(level.getUnit().getId())
                 .build();
     }
@@ -145,7 +161,22 @@ public class LevelService {
     private Level toEntity(LevelDTO dto) {
         return Level.builder()
                 .levelNumber(dto.getLevelNumber())
+                .levelName(dto.getLevelName())
                 .unit(Unit.builder().id(dto.getUnitId()).build())
                 .build();
+    }
+    
+    private void updateStreak(User user) {
+        LocalDate today = LocalDate.now();
+        List<UserLevelProgress> todayProgress = progressRepo.findByUserIdAndCompletedAtDate(user.getId(), today);
+        
+        if (todayProgress.size() == 1) { // First completion today
+            List<UserLevelProgress> yesterdayProgress = progressRepo.findByUserIdAndCompletedAtDate(user.getId(), today.minusDays(1));
+            if (!yesterdayProgress.isEmpty()) {
+                user.setDayStreak(user.getDayStreak() + 1);
+            } else {
+                user.setDayStreak(1);
+            }
+        }
     }
 }
