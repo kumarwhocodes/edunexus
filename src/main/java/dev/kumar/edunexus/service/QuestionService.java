@@ -3,6 +3,7 @@ package dev.kumar.edunexus.service;
 import dev.kumar.edunexus.dto.QuestionDTO;
 import dev.kumar.edunexus.entity.Question;
 import dev.kumar.edunexus.exception.ResourceNotFoundException;
+import dev.kumar.edunexus.repository.LevelRepository;
 import dev.kumar.edunexus.repository.QuestionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,8 +17,12 @@ import java.util.stream.Collectors;
 public class QuestionService {
     
     private final QuestionRepository questionRepo;
+    private final LevelRepository levelRepository;
     
     public List<QuestionDTO> getQuestionsByLevel(UUID levelId) {
+        if(!levelRepository.existsById(levelId)) {
+            throw new ResourceNotFoundException("Level not found with id: " + levelId);
+        }
         try {
             return questionRepo.findByLevelId(levelId).stream()
                     .map(this::toDTO)
@@ -47,6 +52,8 @@ public class QuestionService {
         try {
             existingQuestion.setType(questionDTO.getType());
             existingQuestion.setQuestion(questionDTO.getQuestion());
+            existingQuestion.setOptions(questionDTO.getOptions());
+            existingQuestion.setCorrectAnswers(questionDTO.getCorrectAnswers());
             Question updatedQuestion = questionRepo.save(existingQuestion);
             System.out.println("Question updated with id: " + questionId);
             return toDTO(updatedQuestion);
@@ -74,6 +81,8 @@ public class QuestionService {
                 .id(question.getId())
                 .type(question.getType())
                 .question(question.getQuestion())
+                .options(question.getOptions())
+                .correctAnswers(question.getCorrectAnswers())
                 .levelId(question.getLevel().getId())
                 .build();
     }
@@ -82,6 +91,8 @@ public class QuestionService {
         return Question.builder()
                 .type(dto.getType())
                 .question(dto.getQuestion())
+                .options(dto.getOptions())
+                .correctAnswers(dto.getCorrectAnswers())
                 .level(dev.kumar.edunexus.entity.Level.builder().id(dto.getLevelId()).build())
                 .build();
     }
