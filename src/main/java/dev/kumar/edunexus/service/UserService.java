@@ -3,6 +3,7 @@ package dev.kumar.edunexus.service;
 import com.google.firebase.auth.UserRecord;
 import dev.kumar.edunexus.dto.*;
 import dev.kumar.edunexus.entity.*;
+import dev.kumar.edunexus.exception.ConflictException;
 import dev.kumar.edunexus.exception.ResourceNotFoundException;
 import dev.kumar.edunexus.mapper.UserMapper;
 import dev.kumar.edunexus.repository.*;
@@ -42,7 +43,7 @@ public class UserService {
         if (isUserPresent(firebaseUser))
             return userMapper.toDTO(fetchUserById(firebaseUser));
         else
-            return createUser(firebaseUser);
+            return createUser(firebaseUser, tokenBody.getUsername());
     }
     
     // Fetch user by token
@@ -108,11 +109,15 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + firebaseUser.getUid()));
     }
     
-    private UserDTO createUser(UserRecord firebaseUser) {
+    private UserDTO createUser(UserRecord firebaseUser, String username) {
+        if (repo.existsByUsername(username.trim())) {
+            throw new ConflictException("Username already exists");
+        }
         User user = User
                 .builder()
                 .id(firebaseUser.getUid())
                 .name(firebaseUser.getDisplayName())
+                .username(username.trim())
                 .joinDate(LocalDate.now())
                 .email(firebaseUser.getEmail())
                 .profileUrl(firebaseUser.getPhotoUrl())

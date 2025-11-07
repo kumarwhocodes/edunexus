@@ -11,4 +11,5 @@ import lombok.*;
 @AllArgsConstructor
 public class AccessTokenBody {
     private String token;
+    private String username;
 }
