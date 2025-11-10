@@ -110,6 +110,9 @@ public class UserService {
     }
     
     private UserDTO createUser(UserRecord firebaseUser, String username) {
+        if(username == null || username.isBlank()){
+            throw new IllegalArgumentException("Username cannot be empty");
+        }
         if (repo.existsByUsername(username.trim())) {
             throw new ConflictException("Username already exists");
         }
