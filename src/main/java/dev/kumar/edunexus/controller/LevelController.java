@@ -58,16 +58,17 @@ public class LevelController {
     }
     
     @PostMapping("/{levelId}/complete")
-    public CustomResponse<Void> completeLevelHandler(
+    public CustomResponse<String> completeLevelHandler(
             @PathVariable UUID levelId,
             @RequestHeader("Authorization") String token,
-            @RequestParam int xpEarned
+            @RequestParam int xpEarned,
+            @RequestParam boolean isCompleted
     ) {
-        service.completeLevel(levelId, token, xpEarned);
+        String feedback = service.completeLevel(levelId, token, xpEarned, isCompleted);
         return new CustomResponse<>(
                 HttpStatus.OK,
-                "Level completed successfully",
-                null
+                isCompleted ? "Level completed successfully" : "Level attempted",
+                feedback
         );
     }
 }

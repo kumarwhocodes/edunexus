@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -20,7 +21,9 @@ public class Unit {
     private UUID id;
 
     private String unitName;
-    private String guidance;
+    @Column(columnDefinition = "TEXT")
+    @Convert(converter = JsonConverter.class)
+    private Map<String, Object> guidance;
 
     @ManyToOne
     @JoinColumn(name = "section_id")

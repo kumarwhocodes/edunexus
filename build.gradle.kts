@@ -51,6 +51,9 @@ dependencies {
 
     //Devtools
     developmentOnly("org.springframework.boot:spring-boot-devtools")
+    
+    // HTTP Client for Gemini API
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
 }
 
 tasks.withType<Test> {

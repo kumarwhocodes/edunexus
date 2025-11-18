@@ -17,5 +17,6 @@ public class QuestionDTO {
     private String question;
     private List<String> options;
     private List<String> correctAnswers;
+    private String hint;
     private UUID levelId;
 }

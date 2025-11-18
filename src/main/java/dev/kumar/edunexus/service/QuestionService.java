@@ -18,6 +18,7 @@ public class QuestionService {
     
     private final QuestionRepository questionRepo;
     private final LevelRepository levelRepository;
+    private final GeminiService geminiService;
     
     public List<QuestionDTO> getQuestionsByLevel(UUID levelId) {
         if(!levelRepository.existsById(levelId)) {
@@ -34,8 +35,14 @@ public class QuestionService {
     }
     
     public QuestionDTO createQuestion(QuestionDTO questionDTO) {
+        if (!levelRepository.existsById(questionDTO.getLevelId())) {
+            throw new ResourceNotFoundException("Level not found with id: " + questionDTO.getLevelId());
+        }
+        
         try {
             Question question = toEntity(questionDTO);
+            String hint = geminiService.generateHint(questionDTO.getQuestion(), questionDTO.getOptions(), questionDTO.getCorrectAnswers());
+            question.setHint(hint);
             Question savedQuestion = questionRepo.save(question);
             System.out.println("Question created with id: " + savedQuestion.getId());
             return toDTO(savedQuestion);
@@ -83,6 +90,7 @@ public class QuestionService {
                 .question(question.getQuestion())
                 .options(question.getOptions())
                 .correctAnswers(question.getCorrectAnswers())
+                .hint(question.getHint())
                 .levelId(question.getLevel().getId())
                 .build();
     }
@@ -93,6 +101,7 @@ public class QuestionService {
                 .question(dto.getQuestion())
                 .options(dto.getOptions())
                 .correctAnswers(dto.getCorrectAnswers())
+                .hint(dto.getHint())
                 .level(dev.kumar.edunexus.entity.Level.builder().id(dto.getLevelId()).build())
                 .build();
     }

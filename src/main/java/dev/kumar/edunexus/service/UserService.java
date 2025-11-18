@@ -29,6 +29,7 @@ public class UserService {
     private final UnitRepository unitRepo;
     private final LevelRepository levelRepo;
     private final UserLevelProgressRepository progressRepo;
+    private final PerformanceAnalyticsAI analyticsAI;
     
     // Login user with Firebase token
     public UserDTO loginUser(AccessTokenBody tokenBody) {
@@ -139,6 +140,8 @@ public class UserService {
                     int completedLevels = getCompletedLevelsCount(course.getId(), userId);
                     int totalLevels = getTotalLevelsCount(course.getId());
                     
+                    PredictiveAnalyticsDTO analytics = analyticsAI.predictPerformance(userId, course.getId());
+                    
                     return EnrolledCourseDTO.builder()
                             .id(course.getId())
                             .courseName(course.getCourseName())
@@ -146,6 +149,11 @@ public class UserService {
                             .courseXP(userCourse.getCourseXP())
                             .completedLevels(completedLevels)
                             .totalLevels(totalLevels)
+                            .estimatedDaysToComplete(analytics.getEstimatedDaysToComplete())
+                            .successProbability(analytics.getSuccessProbability())
+                            .recommendedDailyLevels(analytics.getRecommendedDailyLevels())
+                            .difficultyTrend(analytics.getDifficultyTrend().toUpperCase())
+                            .burnoutRisk(analytics.getBurnoutRisk())
                             .build();
                 })
                 .collect(Collectors.toList());

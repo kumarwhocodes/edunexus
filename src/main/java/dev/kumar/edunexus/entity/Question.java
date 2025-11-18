@@ -32,6 +32,8 @@ public class Question {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "json")
     private List<String> correctAnswers;
+    
+    private String hint;
 
     @ManyToOne
     @JoinColumn(name = "level_id")

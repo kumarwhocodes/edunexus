@@ -17,4 +17,9 @@ public class EnrolledCourseDTO {
     private int courseXP;
     private int completedLevels;
     private int totalLevels;
+    private int estimatedDaysToComplete;
+    private double successProbability;
+    private int recommendedDailyLevels;
+    private String difficultyTrend;
+    private double burnoutRisk;
 }

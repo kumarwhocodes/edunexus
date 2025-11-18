@@ -3,6 +3,7 @@ package dev.kumar.edunexus.dto.progress;
 import lombok.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Getter
@@ -14,6 +15,6 @@ import java.util.UUID;
 public class UnitProgressDTO {
     private UUID id;
     private String unitName;
-    private String guidance;
+    private Map<String, Object> guidance;
     private List<LevelProgressDTO> levels;
 }

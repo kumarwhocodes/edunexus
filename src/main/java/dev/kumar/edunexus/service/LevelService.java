@@ -29,9 +29,10 @@ public class LevelService {
     private final FirebaseUtil firebaseUtil;
     private final UnitRepository unitRepo;
     private final UserCourseRepository userCourseRepo;
+    private final GeminiService geminiService;
     
     @Transactional
-    public void completeLevel(UUID levelId, String token, int xpEarned) {
+    public String completeLevel(UUID levelId, String token, int xpEarned, boolean isCompleted) {
         String userId = extractUserId(token);
         
         Level level = levelRepo.findById(levelId)
@@ -46,35 +47,45 @@ public class LevelService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
         
         try {
-            UserLevelProgress progress = UserLevelProgress.builder()
-                    .user(user)
-                    .course(level.getUnit().getSection().getCourse())
-                    .section(level.getUnit().getSection())
-                    .level(level)
-                    .completed(true)
-                    .xpEarned(xpEarned)
-                    .completedAt(LocalDateTime.now())
-                    .build();
+            if (isCompleted) {
+                UserLevelProgress progress = UserLevelProgress.builder()
+                        .user(user)
+                        .course(level.getUnit().getSection().getCourse())
+                        .section(level.getUnit().getSection())
+                        .level(level)
+                        .completed(true)
+                        .xpEarned(xpEarned)
+                        .completedAt(LocalDateTime.now())
+                        .build();
+                
+                progressRepo.save(progress);
+                
+                user.setTotalXP(user.getTotalXP() + xpEarned);
+                updateStreak(user);
+                userRepo.save(user);
+                
+                // Update course XP
+                userCourseRepo.findByUserId(userId).stream()
+                        .filter(uc -> uc.getCourse().getId().equals(courseId))
+                        .findFirst()
+                        .ifPresent(userCourse -> {
+                            userCourse.setCourseXP(userCourse.getCourseXP() + xpEarned);
+                            userCourseRepo.save(userCourse);
+                        });
+            } else{
+                userCourseRepo.findByUserId(userId).stream()
+                        .filter(uc -> uc.getCourse().getId().equals(courseId))
+                        .findFirst()
+                        .ifPresent(userCourse -> {
+                            userCourse.setCourseXP(userCourse.getCourseXP() + xpEarned);
+                            userCourseRepo.save(userCourse);
+                        });
+            }
             
-            progressRepo.save(progress);
-            
-            user.setTotalXP(user.getTotalXP() + xpEarned);
-            updateStreak(user);
-            userRepo.save(user);
-            
-            // Update course XP
-            userCourseRepo.findByUserId(userId).stream()
-                    .filter(uc -> uc.getCourse().getId().equals(courseId))
-                    .findFirst()
-                    .ifPresent(userCourse -> {
-                        userCourse.setCourseXP(userCourse.getCourseXP() + xpEarned);
-                        userCourseRepo.save(userCourse);
-                    });
-            
-            System.out.println("User " + userId + " completed level " + levelId + " and earned " + xpEarned + " XP");
+            return geminiService.generateCompletionFeedback(xpEarned, isCompleted, user.getDayStreak());
         } catch (Exception e) {
-            System.out.println("Error completing level " + levelId + " for user " + userId + ": " + e.getMessage());
-            throw new RuntimeException("Failed to complete level");
+            System.out.println("Error processing level " + levelId + " for user " + userId + ": " + e.getMessage());
+            throw new RuntimeException("Failed to process level");
         }
     }
     
